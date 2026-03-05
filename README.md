@@ -71,26 +71,32 @@ python generate_tables.py
 Repository Structure
 text
 green-hydrogen-policy-scoring/
+## Repository Structure
+
+```
+green-hydrogen-policy-scoring/
 ├── src/
 │   ├── policy_analyzer/          # Text analysis and policy scoring
-│   │   ├── text_extractor.py     # Extracts text from PDF files
-│   │   ├── classifier.py          # Zero-shot classification
-│   │   └── scorer.py              # Calculates policy strength scores
-│   ├── lcoh_model/                # Cost projection models
-│   │   ├── learning_curve.py      # Learning curve implementation
-│   │   ├── monte_carlo.py         # Monte Carlo simulation
-│   │   └── scenarios.py           # Scenario definitions
-│   └── visualization/              # Figure generation
+│   │   ├── text_extractor.py      # Extracts text from PDF files
+│   │   ├── classifier.py           # Zero-shot classification
+│   │   └── scorer.py               # Calculates policy strength scores
+│   ├── lcoh_model/                 # Cost projection models
+│   │   ├── learning_curve.py       # Learning curve implementation
+│   │   ├── monte_carlo.py          # Monte Carlo simulation
+│   │   └── scenarios.py            # Scenario definitions
+│   └── visualization/               # Figure generation
 │       ├── heatmaps.py
 │       └── chord_diagrams.py
 ├── data/
-│   ├── metadata/                   # Document metadata (Table S12)
-│   └── results/                     # Pre-computed results
-├── notebooks/                       # Jupyter notebooks for exploration
-├── tests/                           # Unit tests
+│   ├── metadata/                    # Document metadata (Table S12)
+│   └── results/                      # Pre-computed results
+├── notebooks/                        # Jupyter notebooks for exploration
+├── tests/                            # Unit tests
 ├── requirements.txt
 ├── LICENSE
 └── README.md
+```
+
 Data Availability
 The full text of policy documents cannot be shared here due to copyright restrictions. However:
 
