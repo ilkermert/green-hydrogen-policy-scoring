@@ -1,4 +1,4 @@
-Green Hydrogen Policy Scoring and Cost Projections
+# Green Hydrogen Policy Scoring and Cost Projections
 This repository contains the code and data used in the research article "Artificial Intelligence Based Policy Scoring and Probabilistic Cost Projections for Green Hydrogen Towards 2050" by İlker Mert and Hüseyin Yağlı.
 
 About the Study
