@@ -21,7 +21,7 @@ This study introduces a novel framework that combines Natural Language Processin
 
 ### Policy Analysis Pipeline
 
-The policy text analysis uses zero-shot classification with the XLM-RoBERTa large XNLI model [1,2]:
+The policy text analysis uses zero-shot classification with the XLM-RoBERTa large XNLI model [53,54]:
 
 ```python
 # Zero-shot classification setup
@@ -36,24 +36,24 @@ swot_preds = classifier(sentences, swot_labels, multi_label=False)
 pestel_preds = classifier(sentences, pestel_labels, multi_label=False)
 ```
 
-The policy strength score is calculated as:
+The policy strength score is calculated as (Equation 1 in the manuscript):
 
 ```python
-# Policy score calculation (based on Equation 1 in the manuscript)
+# Policy score calculation
 raw_score = (N_political + 0.5N_Strength - 0.5N_Threat) / N_total
-# Normalized to [0,1] range
+# Normalized to [0,1] range (Equation 2)
 policy_score = (raw_score - min_score) / (max_score - min_score)
 ```
 
 ### LCOH Projection Model
 
-The learning curve incorporates policy scores to adjust capacity doubling time:
+The learning curve incorporates policy scores to adjust capacity doubling time (Equation 11):
 
 ```python
-# Adjust doubling time based on policy strength (based on Equation 11)
+# Adjust doubling time based on policy strength
 adjusted_doubling = max(2.0, base_doubling  (1 - 0.4  policy_score))
 
-# Annual learning factor (based on Equation 8)
+# Annual learning factor (Equation 8)
 ann_learn_factor = (1.0 - learning_rate)(1.0/adjusted_doubling)
 
 # Monte Carlo simulation (1000 iterations per country-scenario)
@@ -142,13 +142,46 @@ The table below presents the 2050 LCOH projections for all 32 countries under fo
 
 - Lowest projected 2050 LCOH (Paris Pathway): China (0.71 USD/kg), United States (1.37 USD/kg), Norway (1.75 USD/kg)
 - Highest projected 2050 LCOH (Paris Pathway): Poland (6.99 USD/kg), Italy (5.34 USD/kg), Hungary (5.28 USD/kg)
-- Policy contribution: Up to 17.6% additional cost reduction in high-policy-strength countries
+- Policy contribution: Up to 17.6% additional cost reduction in high-policy-strength countries (China, under Paris Pathway)
 
 ```python
 # Example: Isolating policy effect for China under Paris Pathway
 policy_contribution = lcoh_with_policy - lcoh_without_policy
 print(f"Policy contribution: {policy_contribution:.2f} USD/kg ({policy_contribution/lcoh_without_policy100:.1f}%)")
 ```
+
+## 📌 Data Sources
+
+### Electrolyser Costs
+- Baseline CAPEX value: European Hydrogen Observatory (EHO), 2024 [69] - Median value: 686 USD/kW
+- Learning curve methodology: IRENA (2020) [6] and Schoots et al. (2008) [67]
+- Global cumulative capacity: IEA Global Hydrogen Review (2023, 2024) [43,44] - Initial capacity: 1.4 GW (2023)
+- Operation & Maintenance costs: 
+  - Fixed O&M: 2% of CAPEX (IRENA, 2020) [6]
+  - Variable O&M: 0.1-0.3 USD/kg (Frieden & Leker, 2024) [8]
+
+### Baseline LCOH Data
+- Source: European Hydrogen Observatory (EHO), 2024 [69]
+- Coverage: Grid electrolysis technology costs including CAPEX, grid charges, OPEX, taxes, and wholesale electricity costs for 32 countries
+
+### Policy Documents
+- Document corpus: Publicly available national hydrogen strategies and energy policies from 32 countries (see Table S12 for complete metadata)
+- Key sources include: Hydrogen Council reports [31,40], IEA Global Hydrogen Review series [43,44], U.S. National Clean Hydrogen Strategy [32], U.K. Hydrogen Strategy [33], UN Energy reports [34,35], World Bank analyses [42], WTO [39], GH2 [37], Hydrogen Europe [45], REN21 [36,46], and APERC [48]
+
+### Scenario and Technical Parameters
+- Scenario framework: Based on IEA scenarios [59,60,61,62]
+- WACC: 8% (constant, based on IRENA 2024) [5]
+- Plant lifetime: 20 years [60]
+- Capacity factor: 70% (literature assumption)
+- Electrolyser efficiency: 50 kWh/kg [6]
+
+## 📚 Model References
+
+The zero-shot classification in this study uses the following models:
+
+[53] Conneau, A., Khandelwal, U., Goyal, N., Chaudhary, V., Wenzek, G., Guzmán, F., Grave, E., Ott, M., Zettlemoyer, L., & Stoyanov, V. (2020). Unsupervised cross-lingual representation learning at scale. Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics, 8440–8451. https://doi.org/10.18653/v1/2020.acl-main.747
+
+[54] Davison, J. (2020). joeddav/xlm-roberta-large-xnli. Hugging Face. https://huggingface.co/joeddav/xlm-roberta-large-xnli
 
 ## 📄 Citation
 
@@ -159,20 +192,6 @@ Mert, İ., & Yağlı, H. (2024). Artificial Intelligence Based Policy Scoring
 and Probabilistic Cost Projections for Green Hydrogen Towards 2050. 
 [Journal Name], [Volume](Issue), [Pages].
 ```
-
-## 📚 Model References
-
-The zero-shot classification in this study uses the following models:
-
-[1] Conneau, A., Khandelwal, U., Goyal, N., Chaudhary, V., Wenzek, G., Guzmán, F., Grave, E., Ott, M., Zettlemoyer, L., & Stoyanov, V. (2020). Unsupervised cross-lingual representation learning at scale. Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics, 8440–8451. https://doi.org/10.18653/v1/2020.acl-main.747
-
-[2] Davison, J. (2020). joeddav/xlm-roberta-large-xnli. Hugging Face. https://huggingface.co/joeddav/xlm-roberta-large-xnli
-
-## 📌 Data Sources
-
-- Baseline LCOH data: European Hydrogen Observatory (2024)
-- Electrolyser costs: IEA (2024) and IRENA (2024)
-- Policy documents: Publicly available national hydrogen strategies and energy policies (see Table S12 for complete metadata)
 
 ## ⚖️ License
 
@@ -188,3 +207,6 @@ For questions regarding the data or methodology, please contact:
 ---
 
 This README accompanies the supplementary materials for the article referenced above. Last updated: March 2026
+
+---
+
