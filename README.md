@@ -1,123 +1,190 @@
-# Green Hydrogen Policy Scoring and Cost Projections
-This repository contains the code and data used in the research article "Artificial Intelligence Based Policy Scoring and Probabilistic Cost Projections for Green Hydrogen Towards 2050" by İlker Mert and Hüseyin Yağlı.
+# Green Hydrogen Policy Scoring and Cost Projections Towards 2050
 
-About the Study
-We developed a new approach that uses natural language processing to read and analyze hydrogen policy documents from 32 countries. The method automatically identifies strengths, weaknesses, opportunities, and threats in these texts, and converts them into a quantitative "policy strength" score. These scores are then used in Monte Carlo simulations to project how green hydrogen costs might evolve up to 2050 under different scenarios.
+Authors: İlker Mert, Hüseyin Yağlı  
+Corresponding author: ilkermert@osmaniye.edu.tr
 
-Key aspects of the study:
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Zero-shot classification of policy texts using the XLM-RoBERTa model
+This repository contains the supplementary data and methodological documentation for the research article:
 
-Analysis of SWOT (Strengths, Weaknesses, Opportunities, Threats) and PESTEL (Political, Economic, Social, Technological, Environmental, Legal) categories
+"Artificial Intelligence Based Policy Scoring and Probabilistic Cost Projections for Green Hydrogen Towards 2050"
 
-Dynamic learning curve model where policy strength affects how fast costs decline
+## 📋 About the Study
 
-Probabilistic cost projections for 32 countries under four scenarios (Paris Pathway, Policy Driven, Market Driven, Failed Transition)
+This study introduces a novel framework that combines Natural Language Processing (NLP) with techno-economic modeling to project green hydrogen costs. The methodology consists of two main components:
 
-Requirements
-To run the code, you will need:
+1. AI-Driven Policy Analysis: Policy documents from 32 countries were analyzed using zero-shot classification to extract SWOT and PESTEL categories, which were converted into quantitative policy strength scores.
 
-Python 3.8 or newer
+2. Probabilistic Cost Projections: These policy scores were integrated into a dynamic learning curve model within a Monte Carlo simulation framework to project Levelized Cost of Hydrogen (LCOH) from 2023 to 2050 under four scenarios.
 
-The packages listed in requirements.txt
+## 🔬 Methodological Overview
 
-Installation
-Clone the repository:
+### Policy Analysis Pipeline
 
-text
-git clone https://github.com/sdream007/green-hydrogen-policy-scoring.git
-cd green-hydrogen-policy-scoring
-Set up a virtual environment (optional but recommended):
+The policy text analysis uses zero-shot classification with the XLM-RoBERTa large XNLI model [1,2]:
 
-text
-python -m venv venv
-source venv/bin/activate  (on Windows: venv\Scripts\activate)
-Install the required packages:
+```python
+# Zero-shot classification setup
+classifier = pipeline("zero-shot-classification", 
+                      model="joeddav/xlm-roberta-large-xnli")
+swot_labels = ["Strength", "Weakness", "Opportunity", "Threat"]
+pestel_labels = ["Political", "Economic", "Social", 
+                 "Technological", "Environmental", "Legal"]
 
-text
-pip install -r requirements.txt
-How to Use
-Analyzing Policy Documents
-python
-from policy_analyzer import PolicyAnalyzer
-
-analyzer = PolicyAnalyzer()
-results = analyzer.analyze_documents(
-    pdf_paths=["document1.pdf", "document2.pdf"],
-    country="United States"
-)
-policy_score = analyzer.calculate_policy_score(results)
-print(f"Policy strength score: {policy_score}")
-Running Cost Projections
-python
-from lcoh_model import LCOHProjector
-
-projector = LCOHProjector()
-results = projector.run_monte_carlo(
-    country="China",
-    scenario="Paris Pathway",
-    policy_score=1.0,
-    iterations=1000
-)
-print(f"2050 LCOH (median): {results.median_2050} USD/kg")
-print(f"90% confidence interval: {results.ci_lower} - {results.ci_upper} USD/kg")
-Reproducing Paper Results
-To generate all results presented in the paper:
-
-text
-python run_analysis.py --countries all --scenarios all --iterations 1000
-python generate_figures.py
-python generate_tables.py
-Repository Structure
-text
-green-hydrogen-policy-scoring/
-## Repository Structure
-
-```
-green-hydrogen-policy-scoring/
-├── src/
-│   ├── policy_analyzer/          # Text analysis and policy scoring
-│   │   ├── text_extractor.py      # Extracts text from PDF files
-│   │   ├── classifier.py           # Zero-shot classification
-│   │   └── scorer.py               # Calculates policy strength scores
-│   ├── lcoh_model/                 # Cost projection models
-│   │   ├── learning_curve.py       # Learning curve implementation
-│   │   ├── monte_carlo.py          # Monte Carlo simulation
-│   │   └── scenarios.py            # Scenario definitions
-│   └── visualization/               # Figure generation
-│       ├── heatmaps.py
-│       └── chord_diagrams.py
-├── data/
-│   ├── metadata/                    # Document metadata (Table S12)
-│   └── results/                      # Pre-computed results
-├── notebooks/                        # Jupyter notebooks for exploration
-├── tests/                            # Unit tests
-├── requirements.txt
-├── LICENSE
-└── README.md
+# Classify each sentence
+swot_preds = classifier(sentences, swot_labels, multi_label=False)
+pestel_preds = classifier(sentences, pestel_labels, multi_label=False)
 ```
 
-Data Availability
-The full text of policy documents cannot be shared here due to copyright restrictions. However:
+The policy strength score is calculated as:
 
-Document metadata is provided in Table S12 of the paper's Supplementary Materials
+```python
+# Policy score calculation (based on Equation 1 in the manuscript)
+raw_score = (N_political + 0.5N_Strength - 0.5N_Threat) / N_total
+# Normalized to [0,1] range
+policy_score = (raw_score - min_score) / (max_score - min_score)
+```
 
-All sentence-level classification results are included in the Supplementary Materials
+### LCOH Projection Model
 
-Baseline LCOH data from the European Hydrogen Observatory is publicly available at the source cited in the paper
+The learning curve incorporates policy scores to adjust capacity doubling time:
 
-Pre-computed results for all countries and scenarios are included in the data/results folder
+```python
+# Adjust doubling time based on policy strength (based on Equation 11)
+adjusted_doubling = max(2.0, base_doubling  (1 - 0.4  policy_score))
 
-Citation
-If you use this code in your own work, please cite our paper:
+# Annual learning factor (based on Equation 8)
+ann_learn_factor = (1.0 - learning_rate)(1.0/adjusted_doubling)
 
-İlker Mert, Hüseyin Yağlı. "Artificial Intelligence Based Policy Scoring and Probabilistic Cost Projections for Green Hydrogen Towards 2050." [Journal details will be added when available]
+# Monte Carlo simulation (1000 iterations per country-scenario)
+for iteration in range(N_MC):
+    capex_val = initial_capex
+    other_val = initial_other_costs
+    for year in years[1:]:
+        capex_val = capex_val  ann_learn_factor
+        other_val = other_val  ann_other_factor
+        lcoh_vals.append(capex_val + other_val)
+```
 
-License
-This project is licensed under the MIT License. See the LICENSE file for details.
+## 📁 Repository Contents
 
-Contact
-For questions or issues, please open an issue on GitHub or contact the corresponding author at ilkermert@osmaniye.edu.tr.
+| Content | Description |
+|---------|-------------|
+| Document Metadata | Complete metadata for all policy documents analyzed (Table S12) |
+| Classification Results | Sentence-level SWOT and PESTEL classification outcomes for all documents |
+| LCOH Projections | Monte Carlo simulation results for all countries and scenarios |
+| Policy Scores | Calculated policy strength scores for each country |
+| Sensitivity Analysis | Robustness check results for key parameters |
+| Baseline Cost Data | Baseline LCOH and electrolyser cost data |
 
-Acknowledgments
-This work uses the `xlm-roberta-large-xnli` model developed by Joe Davison and made available on Hugging Face (https://huggingface.co/joeddav/xlm-roberta-large-xnli) for zero-shot text classification.
+> Note on Policy Texts: The full text of policy documents cannot be shared due to copyright restrictions. However, Table S12 provides complete metadata for all documents, and all sentence-level classification results are included.
+
+## 📊 Model Validation
+
+The zero-shot classification model was validated against manual annotation of 50 randomly selected sentences:
+
+```python
+# Validation metrics
+from sklearn.metrics import f1_score, precision_score, recall_score
+
+print(f"SWOT F1-Score (weighted): {f1_score(y_true_swot, y_pred_swot, average='weighted'):.3f}")
+print(f"PESTEL F1-Score (weighted): {f1_score(y_true_pestel, y_pred_pestel, average='weighted'):.3f}")
+```
+
+| Metric | SWOT | PESTEL |
+|--------|------|--------|
+| Precision (weighted) | 0.82 | 0.87 |
+| Recall (weighted) | 0.82 | 0.84 |
+| F1-Score (weighted) | 0.82 | 0.84 |
+
+Inter-rater agreement (Cohen's Kappa): 0.59 (SWOT), 0.67 (PESTEL)
+
+## 📊 2050 LCOH Projections (USD/kgH₂)
+
+The table below presents the 2050 LCOH projections for all 32 countries under four scenarios, corresponding to Figure 7 in the manuscript. Baseline 2023 values are also shown for reference.
+
+| Countries | LCOH 2023 | Failed Transition | Market Driven | Paris Pathway | Policy Driven |
+|-----------|-----------|-------------------|---------------|---------------|---------------|
+| Austria | 8.87 | 7.50 | 5.34 | 3.86 | 6.60 |
+| Belgium | 8.28 | 7.00 | 4.93 | 3.48 | 6.11 |
+| Bulgaria | 8.16 | 6.87 | 4.82 | 3.36 | 6.05 |
+| China | 3.58 | 6.15 | 2.56 | 0.71 | 3.26 |
+| Croatia | 8.95 | 7.60 | 5.42 | 3.95 | 6.64 |
+| Czechia | 8.43 | 7.09 | 5.04 | 3.60 | 6.22 |
+| Denmark | 6.82 | 5.67 | 3.79 | 2.51 | 4.92 |
+| Estonia | 7.90 | 6.63 | 4.63 | 3.19 | 5.79 |
+| Finland | 4.47 | 6.55 | 4.54 | 3.17 | 5.76 |
+| France | 7.65 | 6.41 | 4.45 | 3.07 | 5.62 |
+| Germany | 10.15 | 8.61 | 6.31 | 4.75 | 7.59 |
+| Greece | 8.18 | 6.90 | 4.81 | 3.39 | 6.06 |
+| Hungary | 11.01 | 9.38 | 6.99 | 5.28 | 8.32 |
+| India | 4.62 | 6.63 | 3.42 | 2.02 | 4.42 |
+| Ireland | 9.42 | 7.97 | 5.78 | 4.23 | 7.10 |
+| Italy | 11.11 | 9.41 | 7.06 | 5.34 | 8.39 |
+| Latvia | 6.85 | 5.74 | 3.83 | 2.50 | 4.95 |
+| Lithuania | 6.86 | 5.74 | 3.84 | 2.52 | 4.96 |
+| Luxembourg | 7.78 | 6.53 | 4.49 | 3.15 | 5.76 |
+| Malta | 8.99 | 7.57 | 5.47 | 3.94 | 6.71 |
+| Netherlands | 8.98 | 7.60 | 5.43 | 3.93 | 6.70 |
+| Norway | 5.61 | 4.70 | 2.93 | 1.75 | 4.04 |
+| Poland | 13.59 | 11.56 | 8.91 | 6.99 | 10.45 |
+| Portugal | 5.18 | 6.88 | 4.85 | 3.41 | 6.04 |
+| Romania | 9.17 | 7.76 | 5.57 | 4.09 | 6.86 |
+| Slovakia | 10.86 | 9.21 | 6.88 | 5.16 | 8.21 |
+| Slovenia | 8.23 | 6.87 | 4.86 | 3.46 | 6.07 |
+| Spain | 7.15 | 5.99 | 4.06 | 2.73 | 5.20 |
+| Sweden | 4.87 | 6.75 | 4.70 | 3.31 | 5.92 |
+| Switzerland | 6.88 | 5.73 | 3.85 | 2.54 | 5.00 |
+| United Kingdom | 10.67 | 9.08 | 6.67 | 5.10 | 8.09 |
+| United States | 5.50 | 7.05 | 3.14 | 1.37 | 4.09 |
+
+### Selected Findings
+
+- Lowest projected 2050 LCOH (Paris Pathway): China (0.71 USD/kg), United States (1.37 USD/kg), Norway (1.75 USD/kg)
+- Highest projected 2050 LCOH (Paris Pathway): Poland (6.99 USD/kg), Italy (5.34 USD/kg), Hungary (5.28 USD/kg)
+- Policy contribution: Up to 17.6% additional cost reduction in high-policy-strength countries
+
+```python
+# Example: Isolating policy effect for China under Paris Pathway
+policy_contribution = lcoh_with_policy - lcoh_without_policy
+print(f"Policy contribution: {policy_contribution:.2f} USD/kg ({policy_contribution/lcoh_without_policy100:.1f}%)")
+```
+
+## 📄 Citation
+
+If you use this data or methodology in your research, please cite:
+
+```
+Mert, İ., & Yağlı, H. (2024). Artificial Intelligence Based Policy Scoring 
+and Probabilistic Cost Projections for Green Hydrogen Towards 2050. 
+[Journal Name], [Volume](Issue), [Pages].
+```
+
+## 📚 Model References
+
+The zero-shot classification in this study uses the following models:
+
+[1] Conneau, A., Khandelwal, U., Goyal, N., Chaudhary, V., Wenzek, G., Guzmán, F., Grave, E., Ott, M., Zettlemoyer, L., & Stoyanov, V. (2020). Unsupervised cross-lingual representation learning at scale. Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics, 8440–8451. https://doi.org/10.18653/v1/2020.acl-main.747
+
+[2] Davison, J. (2020). joeddav/xlm-roberta-large-xnli. Hugging Face. https://huggingface.co/joeddav/xlm-roberta-large-xnli
+
+## 📌 Data Sources
+
+- Baseline LCOH data: European Hydrogen Observatory (2024)
+- Electrolyser costs: IEA (2024) and IRENA (2024)
+- Policy documents: Publicly available national hydrogen strategies and energy policies (see Table S12 for complete metadata)
+
+## ⚖️ License
+
+This supplementary data is made available under the MIT License.
+
+## ✉️ Contact and Code Availability
+
+The complete code used in this study is accessible from the corresponding author upon reasonable request.
+
+For questions regarding the data or methodology, please contact:
+İlker Mert - ilkermert@osmaniye.edu.tr
+
+---
+
+This README accompanies the supplementary materials for the article referenced above. Last updated: March 2026
